@@ -85,7 +85,7 @@ public class PlayerGrapple : MonoBehaviour
         float dFP = Vector3.Distance(transform.position, pointhit);
         // The distance grapple will try to keep from grapple point. 
         joint.maxDistance = dFP * 0.8f;
-        joint.minDistance = dFP * 0.25f;
+        joint.minDistance = 0;
     }
     void drawLine()
     {
@@ -95,6 +95,8 @@ public class PlayerGrapple : MonoBehaviour
     }
     void GrappleEnd()
     {
+        rb.velocity -= (rb.velocity / 10) * Time.deltaTime;
         Destroy(joint);
+        if (gameObject.GetComponents<SpringJoint>() != null ) Destroy(gameObject.GetComponent<SpringJoint>());
     }
 }
