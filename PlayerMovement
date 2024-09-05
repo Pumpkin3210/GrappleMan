@@ -6,20 +6,33 @@ using UnityEngine;
 public class PlayerMovement : MonoBehaviour
 {
     Rigidbody rb;
+    Camera camC;
     public float speed, sensitivity, jumpStrength;
     public float rotationX, rotationY;
     public GameObject cam;
+    private float newFOV=90;
     // Start is called before the first frame update
     void Start()
     {
         Cursor.lockState = CursorLockMode.Locked;
         rb = gameObject.GetComponent<Rigidbody>();
+        camC = cam.GetComponent<Camera>();
     }
 
     // Update is called once per frame
     void Update()
     {
-        cam.GetComponent<Camera>().fieldOfView = 90 + rb.velocity.magnitude;
+        //Fov Changer
+        newFOV = 90 + rb.velocity.magnitude;
+        if (camC.fieldOfView < newFOV)
+        {
+            camC.fieldOfView += 1 / (rb.velocity.magnitude + 1);
+        }
+        if (camC.fieldOfView > newFOV)
+        {
+            camC.fieldOfView -= 1/(rb.velocity.magnitude+1);
+        }
+        //
         rotationX -= Input.GetAxis("Mouse Y") * sensitivity;
         rotationY += Input.GetAxis("Mouse X") * sensitivity;
         cam.transform.rotation = Quaternion.Euler(rotationX, rotationY, 0);
@@ -52,3 +65,4 @@ public class PlayerMovement : MonoBehaviour
         }
     }
 }
+
