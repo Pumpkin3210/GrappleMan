@@ -7,7 +7,7 @@ public class PlayerMovement : MonoBehaviour
 {
     Rigidbody rb;
     Camera camC;
-    public float speed, sensitivity, jumpStrength;
+    public float speed, sensitivity, jumpStrength, mass;
     public float rotationX, rotationY;
     public GameObject cam;
     private float newFOV=90;
@@ -32,7 +32,6 @@ public class PlayerMovement : MonoBehaviour
         {
             camC.fieldOfView -= 1/(rb.velocity.magnitude+1);
         }
-        //
         rotationX -= Input.GetAxis("Mouse Y") * sensitivity;
         rotationY += Input.GetAxis("Mouse X") * sensitivity;
         cam.transform.rotation = Quaternion.Euler(rotationX, rotationY, 0);
@@ -65,4 +64,3 @@ public class PlayerMovement : MonoBehaviour
         }
     }
 }
-
