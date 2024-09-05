@@ -1,0 +1,100 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class PlayerGrapple : MonoBehaviour
+{
+    public GameObject cam;
+    public Vector3 pointhit;
+    public float grappleDist, grappleSpeed,damper,massScale;
+    public bool isGrappling;
+    SpringJoint joint;
+    Rigidbody rb;
+    // Start is called before the first frame update
+    void Start()
+    {
+        rb = GetComponent<Rigidbody>();
+    }
+
+    // Update is called once per frame
+    void Update()
+    {
+
+        if (Input.GetMouseButtonDown(0))
+        {
+            GrapplePull();
+        }
+        if (Input.GetMouseButtonUp(0))
+        {
+            isGrappling = false;
+        }
+        if (Input.GetMouseButtonDown(1))
+        {
+            GrappleRope();
+        }
+        if (Input.GetMouseButtonUp(1))
+        {
+            isGrappling = false;
+        }
+        if (isGrappling == true)
+        {
+            drawLine();
+        }
+        if (isGrappling == false)
+        {
+            GrapplePointDetect();
+            GrappleEnd();
+        }
+    }
+    void GrapplePointDetect()
+    {
+
+    }
+    void GrapplePull()
+    {
+        RaycastHit hit;
+        Physics.Raycast(cam.transform.position, cam.transform.forward, out hit, grappleDist);
+        isGrappling = true;
+        joint = gameObject.AddComponent<SpringJoint>();
+        pointhit = hit.point;
+        joint.autoConfigureConnectedAnchor = false;
+        joint.connectedAnchor = pointhit;
+       
+        float distanceFromPoint = Vector3.Distance(transform.position, hit.point);
+        joint.spring = grappleSpeed;
+        joint.damper = damper;
+        joint.massScale = massScale;
+        float dFP = Vector3.Distance(transform.position, pointhit);
+        // The distance grapple will try to keep from grapple point. 
+        joint.maxDistance = dFP * 0.8f;
+    }
+    void GrappleRope()
+    {
+        RaycastHit hit;
+        Physics.Raycast(cam.transform.position, cam.transform.forward, out hit, grappleDist);
+        isGrappling = true;
+        joint = gameObject.AddComponent<SpringJoint>();
+        pointhit = hit.point;
+        joint.autoConfigureConnectedAnchor = false;
+        joint.connectedAnchor = pointhit;
+
+        float distanceFromPoint = Vector3.Distance(transform.position, hit.point);
+        joint.spring = 0;
+        joint.damper = damper;
+        joint.massScale = massScale;
+        float dFP = Vector3.Distance(transform.position, pointhit);
+        // The distance grapple will try to keep from grapple point. 
+        joint.maxDistance = dFP * 0.8f;
+        joint.minDistance = dFP * 0.25f;
+    }
+    void drawLine()
+    {
+        LineRenderer lr = gameObject.GetComponent<LineRenderer>();
+        lr.SetPosition(0, transform.position);
+        lr.SetPosition(1, pointhit);
+    }
+    void GrappleEnd()
+    {
+        Destroy(joint);
+    }
+}
