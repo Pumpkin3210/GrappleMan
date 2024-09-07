@@ -1,12 +1,14 @@
 using System.Collections;
 using System.Collections.Generic;
+using UnityEditor;
 using UnityEngine;
 
 public class PlayerGrapple : MonoBehaviour
 {
-    public GameObject cam;
+    public GameObject cam,grapplePointObj,grapobj;
+    public GameObject grapCoolDownImg;
     public Vector3 pointhit;
-    public float grappleDist, grappleSpeed,damper,massScale;
+    public float grappleDist, grappleSpeed,damper,massScale, grappleJuice=5;
     public bool isGrappling;
     SpringJoint joint;
     Rigidbody rb;
@@ -19,41 +21,65 @@ public class PlayerGrapple : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-
-        if (Input.GetMouseButtonDown(0))
+       grapCoolDownImg.transform.localScale = new Vector3(grappleJuice,1,1);
+        if (Input.GetMouseButtonDown(0) || Input.GetKeyDown(KeyCode.Q))
         {
-            GrapplePull();
+            if (grappleJuice>1) {
+                grappleJuice-=1;
+            Grapple(grappleSpeed);
+            return;
+            }
         }
-        if (Input.GetMouseButtonUp(0))
+        if (Input.GetMouseButtonUp(0) || Input.GetKeyUp(KeyCode.Q))
         {
             isGrappling = false;
         }
-        if (Input.GetMouseButtonDown(1))
+        if (Input.GetMouseButtonDown(1) || Input.GetKeyDown(KeyCode.E))
         {
-            GrappleRope();
+            if (grappleJuice>0.75) {
+                grappleJuice-=0.1f;
+            Grapple(0);
+            return;
+            }
         }
-        if (Input.GetMouseButtonUp(1))
+        if (Input.GetMouseButtonUp(1) || Input.GetKeyUp(KeyCode.E))
         {
             isGrappling = false;
         }
         if (isGrappling == true)
         {
+            if (grappleJuice<0.5f) {
+            isGrappling=false;
+            }
+            grappleJuice-=(joint.spring/4 + 0.1f)*Time.deltaTime;
             drawLine();
         }
         if (isGrappling == false)
         {
+            LineRenderer lr = gameObject.GetComponent<LineRenderer>();
+            lr.enabled = false;
+            if (grappleJuice<5f) {
+            grappleJuice+=0.25f*Time.deltaTime;
+            }
             GrapplePointDetect();
             GrappleEnd();
         }
     }
     void GrapplePointDetect()
     {
-
+        RaycastHit hit;
+        Physics.Raycast(cam.transform.position, cam.transform.forward, out hit, grappleDist);
+        if (hit.point != null) {
+        grapplePointObj.transform.position = hit.point;
+        grapplePointObj.GetComponent<MeshRenderer>().material.color = Color.red;
+        }
     }
-    void GrapplePull()
+    void Grapple(float spring)
     {
         RaycastHit hit;
         Physics.Raycast(cam.transform.position, cam.transform.forward, out hit, grappleDist);
+
+        if (hit.collider != null) {
         isGrappling = true;
         joint = gameObject.AddComponent<SpringJoint>();
         pointhit = hit.point;
@@ -61,36 +87,19 @@ public class PlayerGrapple : MonoBehaviour
         joint.connectedAnchor = pointhit;
        
         float distanceFromPoint = Vector3.Distance(transform.position, hit.point);
-        joint.spring = grappleSpeed;
+        joint.spring = spring;
         joint.damper = damper;
         joint.massScale = massScale;
         float dFP = Vector3.Distance(transform.position, pointhit);
-        // The distance grapple will try to keep from grapple point. 
-        joint.maxDistance = dFP * 0.8f;
-    }
-    void GrappleRope()
-    {
-        RaycastHit hit;
-        Physics.Raycast(cam.transform.position, cam.transform.forward, out hit, grappleDist);
-        isGrappling = true;
-        joint = gameObject.AddComponent<SpringJoint>();
-        pointhit = hit.point;
-        joint.autoConfigureConnectedAnchor = false;
-        joint.connectedAnchor = pointhit;
 
-        float distanceFromPoint = Vector3.Distance(transform.position, hit.point);
-        joint.spring = 0;
-        joint.damper = damper;
-        joint.massScale = massScale;
-        float dFP = Vector3.Distance(transform.position, pointhit);
-        // The distance grapple will try to keep from grapple point. 
-        joint.maxDistance = dFP * 0.8f;
-        joint.minDistance = 0;
+        joint.maxDistance = dFP/(-spring+1);
+        }
     }
     void drawLine()
     {
         LineRenderer lr = gameObject.GetComponent<LineRenderer>();
-        lr.SetPosition(0, transform.position);
+        lr.enabled = true;
+        lr.SetPosition(0, grapobj.transform.position);
         lr.SetPosition(1, pointhit);
     }
     void GrappleEnd()
