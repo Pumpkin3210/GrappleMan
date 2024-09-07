@@ -1,16 +1,20 @@
-using System.Collections;
-using System.Collections.Generic;
-using UnityEditor;
 using UnityEngine;
+using System;
+using Palmmedia.ReportGenerator.Core.Reporting.Builders;
+using System.Security.Cryptography;
+
 
 public class PlayerMovement : MonoBehaviour
 {
     Rigidbody rb;
     Camera camC;
-    public float speed, sensitivity, jumpStrength, mass;
+    public float speed, sensitivity, jumpStrength, mass, maxDegree, changeSpeed, rot, rotEnd;
     public float rotationX, rotationY;
     public GameObject cam;
+    public GameObject wallRunWall;
     private float newFOV=90;
+    public bool isWallRunning=false;
+    public bool left;
     // Start is called before the first frame update
     void Start()
     {
@@ -34,9 +38,10 @@ public class PlayerMovement : MonoBehaviour
         }
         rotationX -= Input.GetAxis("Mouse Y") * sensitivity;
         rotationY += Input.GetAxis("Mouse X") * sensitivity;
-        cam.transform.rotation = Quaternion.Euler(rotationX, rotationY, 0);
-        transform.rotation = Quaternion.Euler(0, rotationY, 0);
-        if (Input.GetKey(KeyCode.W)) 
+        transform.rotation = Quaternion.Euler(transform.rotation.x, rotationY, transform.rotation.z);
+        cam.transform.rotation = Quaternion.Euler(Math.Clamp(rotationX,-maxDegree,maxDegree), rotationY,-rot); 
+        if (isWallRunning==false) {
+if (Input.GetKey(KeyCode.W)) 
         {
             rb.velocity += transform.forward * Time.deltaTime * speed / (rb.velocity.magnitude+1);
         }
@@ -52,15 +57,72 @@ public class PlayerMovement : MonoBehaviour
         {
             rb.velocity += transform.right * Time.deltaTime * speed / (rb.velocity.magnitude + 1);   
         }
+        }
+        
         RaycastHit hit;
-        Physics.Raycast(transform.position, -transform.up, out hit, 5f);
+        Physics.Raycast(transform.position, -transform.up, out hit, 2f);
 
         if (Input.GetKeyDown(KeyCode.Space))
         {
-            if (hit.collider != null)
+                 if (hit.collider != null)
+                 {
+                    rb.velocity += transform.up * jumpStrength/2;
+                 }    
+        }
+             RaycastHit hitLeft;
+             Physics.Raycast(transform.position, -transform.right, out hitLeft, 1.5f);
+             RaycastHit hitRight;
+             Physics.Raycast(transform.position, transform.right, out hitRight, 1.5f);
+             if (isWallRunning==false) {
+             if(hitRight.collider!=null && hitRight.collider.gameObject!=wallRunWall) 
+             {
+              left=false;
+              wallRunWall = hitRight.collider.gameObject;
+              rotEnd=-15;
+              StartWallRun();
+              return;
+             } 
+             if(hitLeft.collider!=null&& hitLeft.collider.gameObject!=wallRunWall) 
+             {
+                left = true;
+                wallRunWall = hitLeft.collider.gameObject;
+                rotEnd=15;
+              StartWallRun();
+              return;
+             }       
+             }
+            
+            if (isWallRunning==true) 
             {
-                    rb.velocity += transform.up * jumpStrength;
+                if (hitLeft.collider==null && hitRight.collider==null) {
+                    StopWallRun();
+                }
+             if (Input.GetKeyDown(KeyCode.Space)) {
+              StopWallRun();
+              return;
+             }
             }
+        float calRot = rot + (rotEnd - rot) * Time.deltaTime * changeSpeed;
+        rot = Mathf.Round(calRot*100)/100;
+    }
+    void StopWallRun() {
+      isWallRunning= false;
+      rotEnd=0;
+      Debug.Log("rotatedCameraBack");
+     rb.velocity += (cam.transform.forward)*jumpStrength;
+    }
+    void StartWallRun() 
+    {
+     isWallRunning = true;
+     Debug.Log("rotatedCamera");
+     rb.velocity = rb.velocity+Vector3.up*jumpStrength/2+ new Vector3(0,rb.velocity.y,0);
+    return;
+    }
+    void OnCollisionStay(Collision Collider) {
+        if (Collider.gameObject.tag == "Floor") {
+            rotEnd=0;
+            isWallRunning= false;
+            wallRunWall=null;
         }
     }
 }
